@@ -1,0 +1,108 @@
+/* General Styles */
+:root {
+    --primary-color: #4CAF50;
+    --secondary-color: #333;
+    --font-family: 'Arial, sans-serif';
+    --spacing: 1rem;
+}
+
+body {
+    margin: 0;
+    font-family: var(--font-family);
+    line-height: 1.6;
+}
+
+/* Navbar */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing);
+    background: var(--secondary-color);
+    color: white;
+}
+
+.nav-links {
+    list-style: none;
+    display: flex;
+    gap: var(--spacing);
+}
+
+.nav-links a {
+    color: white;
+    text-decoration: none;
+}
+
+/* Hero Section */
+.hero {
+    text-align: center;
+    padding: 5rem 2rem;
+    background: linear-gradient(to right, #4CAF50, #81C784);
+    color: white;
+}
+
+.cta-buttons .btn {
+    margin: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: white;
+    color: var(--primary-color);
+    border: none;
+    cursor: pointer;
+}
+
+/* About Section */
+.about {
+    padding: 2rem;
+    background: #f4f4f4;
+}
+
+.values ul {
+    list-style: none;
+    padding: 0;
+}
+
+/* Services Section */
+.services {
+    padding: 2rem;
+}
+
+.service-cards {
+    display: flex;
+    gap: var(--spacing);
+}
+
+.card {
+    padding: var(--spacing);
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+/* Projects Section */
+.projects {
+    padding: 2rem;
+    background: #f4f4f4;
+}
+
+.project-cards {
+    display: flex;
+    gap: var(--spacing);
+}
+
+/* Contact Section */
+.contact {
+    padding: 2rem;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing);
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: var(--spacing);
+    background: var(--secondary-color);
+    color: white;
+}

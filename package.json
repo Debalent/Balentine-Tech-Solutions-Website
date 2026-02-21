@@ -1,0 +1,12 @@
+{
+  "name": "balentine-tech-solutions",
+  "version": "1.0.0",
+  "description": "Balentine Tech Solutions Website",
+  "main": "index.js",
+  "scripts": {
+    "build": "echo 'No build step required for static HTML/CSS/JS'",
+    "start": "echo 'Open index.html in a browser'"
+  },
+  "author": "Demond Balentine",
+  "license": "MIT"
+}
