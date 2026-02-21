@@ -227,6 +227,7 @@ button {
     right: 0;
     height: var(--nav-height);
     background: rgba(10, 10, 10, 0.8);
+    -webkit-backdrop-filter: var(--blur-md);
     backdrop-filter: var(--blur-md);
     border-bottom: 1px solid var(--color-border);
     z-index: 1000;
@@ -426,6 +427,7 @@ button {
                       linear-gradient(90deg, var(--color-border) 1px, transparent 1px);
     background-size: 50px 50px;
     opacity: 0.3;
+    -webkit-mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
     mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
 }
 
@@ -458,6 +460,9 @@ button {
     font-size: var(--font-size-sm);
     color: var(--color-text-secondary);
     margin-bottom: var(--spacing-xl);
+    max-width: 100%;
+    white-space: normal;
+    word-break: break-word;
 }
 
 .badge-dot {
@@ -472,11 +477,19 @@ button {
     font-size: var(--font-size-6xl);
     line-height: 1.1;
     margin-bottom: var(--spacing-lg);
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 @media (max-width: 768px) {
     .hero-title {
         font-size: var(--font-size-4xl);
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-title {
+        font-size: var(--font-size-3xl);
     }
 }
 
@@ -486,6 +499,8 @@ button {
     line-height: var(--line-height-relaxed);
     max-width: 600px;
     margin-bottom: var(--spacing-2xl);
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 .hero-cta {
@@ -501,6 +516,20 @@ button {
     gap: var(--spacing-xl);
     padding-top: var(--spacing-2xl);
     border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 480px) {
+    .hero-stats {
+        gap: var(--spacing-md);
+    }
+
+    .stat-value {
+        font-size: var(--font-size-2xl);
+    }
+
+    .stat-label {
+        font-size: var(--font-size-xs);
+    }
 }
 
 .stat {
@@ -536,10 +565,13 @@ button {
         rgba(168, 85, 247, 0.1));
     border: 1px solid var(--color-border);
     border-radius: var(--border-radius-xl);
+    -webkit-backdrop-filter: var(--blur-sm);
     backdrop-filter: var(--blur-sm);
     display: flex;
     align-items: center;
     justify-content: center;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .hero-logo-large {
@@ -643,6 +675,7 @@ button {
     position: absolute;
     inset: 0;
     background: rgba(0, 0, 0, 0.8);
+    -webkit-backdrop-filter: var(--blur-sm);
     backdrop-filter: var(--blur-sm);
     display: flex;
     align-items: center;
