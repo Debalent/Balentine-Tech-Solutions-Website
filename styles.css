@@ -1045,7 +1045,7 @@ button {
 }
 
 .service-outcomes li::before {
-    content: 'âœ“';
+    content: '✓';
     color: var(--color-success);
     font-weight: bold;
     flex-shrink: 0;
