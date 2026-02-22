@@ -673,6 +673,52 @@ button {
     color: var(--color-text-tertiary);
 }
 
+/* Screenshot slider for project cards with real images */
+.project-screenshots {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.screenshot-slide {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.screenshot-slide.active {
+    opacity: 1;
+}
+
+.screenshot-dots {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    z-index: 10;
+}
+
+.dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+    border: none;
+}
+
+.dot.active {
+    background: white;
+}
+
 .project-overlay {
     position: absolute;
     inset: 0;
