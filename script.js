@@ -417,6 +417,16 @@ function showSlide(dotEl, index) {
     dots[index].classList.add('active');
 }
 
+function showAboutSlide(dotEl, index) {
+    const slider = dotEl.closest('.about-photo-slider');
+    const slides = slider.querySelectorAll('.about-slide');
+    const dots = slider.querySelectorAll('.dot');
+    slides.forEach(s => s.classList.remove('active'));
+    dots.forEach(d => d.classList.remove('active'));
+    slides[index].classList.add('active');
+    dots[index].classList.add('active');
+}
+
 // Auto-advance each screenshot slider every 3 seconds
 document.querySelectorAll('.project-screenshots').forEach(slider => {
     let current = 0;
@@ -431,3 +441,20 @@ document.querySelectorAll('.project-screenshots').forEach(slider => {
         dots[current].classList.add('active');
     }, 3000);
 });
+
+// Auto-advance about photo slider every 4 seconds
+const aboutSlider = document.querySelector('.about-photo-slider');
+if (aboutSlider) {
+    let current = 0;
+    const slides = aboutSlider.querySelectorAll('.about-slide');
+    const dots = aboutSlider.querySelectorAll('.dot');
+    if (slides.length >= 2) {
+        setInterval(() => {
+            slides[current].classList.remove('active');
+            dots[current].classList.remove('active');
+            current = (current + 1) % slides.length;
+            slides[current].classList.add('active');
+            dots[current].classList.add('active');
+        }, 4000);
+    }
+}
