@@ -402,3 +402,32 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+/* ============================================
+   PROJECT SCREENSHOT SLIDER
+   ============================================ */
+
+function showSlide(dotEl, index) {
+    const card = dotEl.closest('.project-screenshots');
+    const slides = card.querySelectorAll('.screenshot-slide');
+    const dots = card.querySelectorAll('.dot');
+    slides.forEach(s => s.classList.remove('active'));
+    dots.forEach(d => d.classList.remove('active'));
+    slides[index].classList.add('active');
+    dots[index].classList.add('active');
+}
+
+// Auto-advance each screenshot slider every 3 seconds
+document.querySelectorAll('.project-screenshots').forEach(slider => {
+    let current = 0;
+    const slides = slider.querySelectorAll('.screenshot-slide');
+    const dots = slider.querySelectorAll('.dot');
+    if (slides.length < 2) return;
+    setInterval(() => {
+        slides[current].classList.remove('active');
+        dots[current].classList.remove('active');
+        current = (current + 1) % slides.length;
+        slides[current].classList.add('active');
+        dots[current].classList.add('active');
+    }, 3000);
+});

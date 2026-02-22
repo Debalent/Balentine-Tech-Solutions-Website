@@ -143,11 +143,13 @@
 
                 <article class="project-card">
                     <div class="project-image">
-                        <div class="project-image-placeholder">
-                            <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
-                                <path d="M50 15H10c-2.761 0-5 2.239-5 5v20c0 2.761 2.239 5 5 5h40c2.761 0 5-2.239 5-5V20c0-2.761-2.239-5-5-5z" stroke="currentColor" stroke-width="2"/>
-                                <path d="M15 30h10M35 30h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
+                        <div class="project-screenshots">
+                            <img src="assets/creatorsync-1.png" alt="CreatorSync UI Screenshot 1" class="screenshot-slide active">
+                            <img src="assets/creatorsync-2.png" alt="CreatorSync UI Screenshot 2" class="screenshot-slide">
+                            <div class="screenshot-dots">
+                                <span class="dot active" onclick="showSlide(this, 0)"></span>
+                                <span class="dot" onclick="showSlide(this, 1)"></span>
+                            </div>
                         </div>
                         <div class="project-overlay">
                             <a href="#" class="btn btn-sm">View Project</a>
