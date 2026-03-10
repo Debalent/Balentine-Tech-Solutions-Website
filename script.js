@@ -458,3 +458,106 @@ if (aboutSlider) {
         }, 4000);
     }
 }
+
+/* ============================================
+   PROJECT MODAL GALLERY
+   ============================================ */
+
+const projectModal = document.getElementById('projectModal');
+const projectModalBackdrop = document.getElementById('projectModalBackdrop');
+const projectModalClose = document.getElementById('projectModalClose');
+const projectModalTitle = document.getElementById('projectModalTitle');
+const projectModalDescription = document.getElementById('projectModalDescription');
+const projectModalGallery = document.getElementById('projectModalGallery');
+const projectModalDots = document.getElementById('projectModalDots');
+const projectModalPrev = document.getElementById('projectModalPrev');
+const projectModalNext = document.getElementById('projectModalNext');
+
+let projectModalImages = [];
+let projectModalIndex = 0;
+
+function renderProjectModalImage(index) {
+    if (!projectModalImages.length) return;
+    const images = projectModalGallery.querySelectorAll('.project-modal-image');
+    const dots = projectModalDots.querySelectorAll('.project-modal-dot');
+    images.forEach(img => img.classList.remove('active'));
+    dots.forEach(dot => dot.classList.remove('active'));
+    images[index]?.classList.add('active');
+    dots[index]?.classList.add('active');
+}
+
+function openProjectModal(card) {
+    const titleEl = card.querySelector('.project-title');
+    const descEl = card.querySelector('.project-description');
+    const imagesAttr = card.dataset.images || '';
+    const imageList = imagesAttr.split(',').map(s => s.trim()).filter(Boolean);
+
+    if (!imageList.length || !projectModal) return;
+
+    projectModalImages = imageList;
+    projectModalIndex = 0;
+
+    // Populate header
+    projectModalTitle.textContent = titleEl ? titleEl.textContent : '';
+    projectModalDescription.textContent = descEl ? descEl.textContent : '';
+
+    // Build gallery
+    projectModalGallery.innerHTML = '';
+    projectModalDots.innerHTML = '';
+
+    projectModalImages.forEach((src, idx) => {
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = projectModalTitle.textContent || 'Project screenshot';
+        img.className = 'project-modal-image' + (idx === 0 ? ' active' : '');
+        projectModalGallery.appendChild(img);
+
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = 'project-modal-dot' + (idx === 0 ? ' active' : '');
+        dot.addEventListener('click', () => {
+            projectModalIndex = idx;
+            renderProjectModalImage(projectModalIndex);
+        });
+        projectModalDots.appendChild(dot);
+    });
+
+    projectModal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeProjectModal() {
+    if (!projectModal) return;
+    projectModal.classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+projectModalPrev?.addEventListener('click', () => {
+    if (!projectModalImages.length) return;
+    projectModalIndex = (projectModalIndex - 1 + projectModalImages.length) % projectModalImages.length;
+    renderProjectModalImage(projectModalIndex);
+});
+
+projectModalNext?.addEventListener('click', () => {
+    if (!projectModalImages.length) return;
+    projectModalIndex = (projectModalIndex + 1) % projectModalImages.length;
+    renderProjectModalImage(projectModalIndex);
+});
+
+projectModalClose?.addEventListener('click', closeProjectModal);
+projectModalBackdrop?.addEventListener('click', closeProjectModal);
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && projectModal?.classList.contains('open')) {
+        closeProjectModal();
+    }
+});
+
+// Attach open handlers to project cards
+document.querySelectorAll('.project-card').forEach(card => {
+    const trigger = card.querySelector('.project-overlay .btn') || card;
+    trigger.addEventListener('click', (e) => {
+        e.preventDefault();
+        openProjectModal(card);
+    });
+});

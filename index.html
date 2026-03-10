@@ -114,7 +114,7 @@
                 <p class="section-subtitle">Real-world applications built with modern tech stacks and scalable architecture</p>
             </div>
             <div class="projects-grid">
-                <article class="project-card">
+                <article class="project-card" data-project="salonshop" data-images="assets/salonshop-1.jpg,assets/salonshop-2.jpg">
                     <div class="project-image">
                         <div class="project-screenshots">
                             <img src="assets/salonshop-1.jpg" alt="SalonShop bookings and revenue dashboard" class="screenshot-slide active">
@@ -143,7 +143,7 @@
                     </div>
                 </article>
 
-                <article class="project-card">
+                <article class="project-card" data-project="creatorsync" data-images="assets/creatorsync-1.jpg,assets/creatorsync-2.jpg,assets/creatorsync-3.jpg,assets/creatorsync-4.jpg">
                     <div class="project-image">
                         <div class="project-screenshots">
                             <img src="assets/creatorsync-1.jpg" alt="CreatorSync marketplace hero screen" class="screenshot-slide active">
@@ -176,7 +176,7 @@
                     </div>
                 </article>
 
-                <article class="project-card">
+                <article class="project-card" data-project="scoutvision" data-images="assets/scoutvision-1.jpg,assets/scoutvision-2.jpg,assets/scoutvision-3.jpg">
                     <div class="project-image">
                         <div class="project-screenshots">
                             <img src="assets/scoutvision-1.jpg" alt="ScoutVision sport selection UI" class="screenshot-slide active">
@@ -209,6 +209,30 @@
             </div>
         </div>
     </section>
+
+    <!-- Project Detail Modal -->
+    <div class="project-modal" id="projectModal" aria-hidden="true">
+        <div class="project-modal-backdrop" id="projectModalBackdrop"></div>
+        <div class="project-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="projectModalTitle">
+            <button class="project-modal-close" id="projectModalClose" aria-label="Close project details">
+                &times;
+            </button>
+            <div class="project-modal-header">
+                <h3 id="projectModalTitle"></h3>
+                <p id="projectModalDescription"></p>
+            </div>
+            <div class="project-modal-body">
+                <button class="project-modal-nav project-modal-prev" id="projectModalPrev" aria-label="Previous screenshot">
+                    &#10094;
+                </button>
+                <div class="project-modal-gallery" id="projectModalGallery"></div>
+                <button class="project-modal-nav project-modal-next" id="projectModalNext" aria-label="Next screenshot">
+                    &#10095;
+                </button>
+            </div>
+            <div class="project-modal-dots" id="projectModalDots"></div>
+        </div>
+    </div>
 
     <!-- Tech Stack Section -->
     <section class="tech-stack">
