@@ -1158,6 +1158,25 @@ button {
     font-size: var(--font-size-2xl);
 }
 
+.credential-logo {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--border-radius-md);
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.credential-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
 .credential-item strong {
     display: block;
     font-size: var(--font-size-base);
@@ -1722,4 +1741,98 @@ button {
 .fade-in.visible {
     opacity: 1;
     transform: translateY(0);
+}
+
+/* ============================================
+   MOBILE OPTIMIZATIONS
+   ============================================ */
+
+@media (max-width: 640px) {
+    .container {
+        padding: 0 var(--spacing-md);
+    }
+
+    .hero {
+        align-items: flex-start;
+        padding-top: calc(var(--nav-height) + var(--spacing-xl));
+        padding-bottom: var(--spacing-3xl);
+    }
+
+    .hero-container {
+        gap: var(--spacing-3xl);
+    }
+
+    .hero-mockup {
+        padding: var(--spacing-xl);
+    }
+
+    .hero-logo-large {
+        max-width: 260px;
+    }
+
+    .hero-cta {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .hero-cta .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .hero-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--spacing-lg);
+    }
+
+    .project-content {
+        padding: var(--spacing-lg);
+    }
+
+    .project-title {
+        font-size: var(--font-size-lg);
+    }
+
+    .project-description {
+        font-size: var(--font-size-sm);
+    }
+
+    .project-modal-body {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .project-modal-gallery {
+        max-height: 60vh;
+    }
+
+    .contact-form-wrapper {
+        padding: var(--spacing-2xl);
+    }
+
+    .who-i-work-with {
+        padding: var(--spacing-2xl);
+    }
+
+    section {
+        padding-top: var(--spacing-3xl);
+        padding-bottom: var(--spacing-3xl);
+    }
+
+    .scroll-to-top {
+        bottom: 1.25rem !important;
+        right: 1.25rem !important;
+        width: 40px !important;
+        height: 40px !important;
+    }
+}
+
+@media (max-width: 400px) {
+    .hero-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .section-header {
+        margin-bottom: var(--spacing-3xl);
+    }
 }
