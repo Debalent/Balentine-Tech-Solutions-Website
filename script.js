@@ -378,7 +378,7 @@ function throttle(func, limit) {
 
 // Initialize all animations and effects when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('ðŸš€ Balentine Tech Solutions - Website Initialized');
+    console.log('Balentine Tech Solutions - Website Initialized');
 
     // Add initial fade-in class to elements
     document.querySelectorAll('.hero-content').forEach(el => {
@@ -386,7 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Preload critical images
-    const criticalImages = ['logo.jpg', 'profile-photo.jpg'];
+    const criticalImages = ['logo.jpg'];
     criticalImages.forEach(src => {
         const img = new Image();
         img.src = src;
@@ -417,16 +417,6 @@ function showSlide(dotEl, index) {
     dots[index].classList.add('active');
 }
 
-function showAboutSlide(dotEl, index) {
-    const slider = dotEl.closest('.about-photo-slider');
-    const slides = slider.querySelectorAll('.about-slide');
-    const dots = slider.querySelectorAll('.dot');
-    slides.forEach(s => s.classList.remove('active'));
-    dots.forEach(d => d.classList.remove('active'));
-    slides[index].classList.add('active');
-    dots[index].classList.add('active');
-}
-
 // Auto-advance each screenshot slider every 3 seconds
 document.querySelectorAll('.project-screenshots').forEach(slider => {
     let current = 0;
@@ -442,22 +432,7 @@ document.querySelectorAll('.project-screenshots').forEach(slider => {
     }, 3000);
 });
 
-// Auto-advance about photo slider every 4 seconds
-const aboutSlider = document.querySelector('.about-photo-slider');
-if (aboutSlider) {
-    let current = 0;
-    const slides = aboutSlider.querySelectorAll('.about-slide');
-    const dots = aboutSlider.querySelectorAll('.dot');
-    if (slides.length >= 2) {
-        setInterval(() => {
-            slides[current].classList.remove('active');
-            dots[current].classList.remove('active');
-            current = (current + 1) % slides.length;
-            slides[current].classList.add('active');
-            dots[current].classList.add('active');
-        }, 4000);
-    }
-}
+// About photo slider logic removed after design update
 
 /* ============================================
    PROJECT MODAL GALLERY
