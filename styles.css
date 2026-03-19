@@ -1109,6 +1109,46 @@ button {
     z-index: 10;
 }
 
+.about-profile-card {
+    position: relative;
+    padding: var(--spacing-2xl);
+    background: linear-gradient(135deg,
+        rgba(99, 102, 241, 0.12),
+        rgba(168, 85, 247, 0.18));
+    border-radius: var(--border-radius-xl);
+    border: 1px solid var(--color-border);
+    -webkit-backdrop-filter: var(--blur-sm);
+    backdrop-filter: var(--blur-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.about-profile-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: rgba(15, 23, 42, 0.8);
+    color: var(--color-text-on-accent);
+}
+
+.about-profile-title {
+    font-family: var(--font-display);
+    font-size: var(--font-size-xl);
+    margin: 0;
+}
+
+.about-profile-text {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
 .profile-image {
     width: 100%;
     border-radius: var(--border-radius-xl);
