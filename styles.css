@@ -1111,6 +1111,7 @@ button {
 
 .about-profile-card {
     position: relative;
+    margin-top: var(--spacing-xl);
     padding: var(--spacing-2xl);
     background: linear-gradient(135deg,
         rgba(99, 102, 241, 0.12),
