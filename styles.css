@@ -1225,6 +1225,11 @@ button {
     object-fit: contain;
 }
 
+.credential-logo--wide {
+    width: 100px;
+    height: 44px;
+}
+
 .credential-item strong {
     display: block;
     font-size: var(--font-size-base);
