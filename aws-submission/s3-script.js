@@ -7,8 +7,8 @@ const fs = require("fs");
 const path = require("path");
 
 // Update these values:
-const BUCKET_NAME = "YOUR_BUCKET_NAME";
-const REGION = "YOUR_REGION";
+const BUCKET_NAME = "balentine-tech-portfolio-ok-2026db-708499049952-us-east-2-an";
+const REGION = "us-east-2";
 
 const s3 = new S3Client({ region: REGION });
 
