@@ -165,19 +165,26 @@ contactForm?.addEventListener('submit', async (e) => {
         Sending...
     `;
 
-    // Simulate form submission (replace with actual backend endpoint)
+    // API endpoint — update BACKEND_URL when you deploy your backend next week
+    const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:3001'       // Local development
+        : 'https://YOUR_BACKEND_URL';   // Replace with your deployed backend URL next week
+
+    // Send form data to backend /api/contact endpoint
     try {
-        // In a real application, you would send this to your backend:
-        // await fetch('/api/contact', {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/json' },
-        //     body: JSON.stringify(data)
-        // });
+        const response = await fetch(`${BACKEND_URL}/api/contact`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({
+                name: data.name,
+                email: data.email,
+                project: data.project,
+                message: data.message
+            })
+        });
 
-        console.log('Form submitted:', data);
-
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Submission failed');
 
         // Show success message
         submitButton.innerHTML = `
