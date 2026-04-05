@@ -757,6 +757,13 @@ button {
     gap: var(--spacing-sm);
 }
 
+.project-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+
 .tech-tag {
     padding: 0.375rem 0.75rem;
     background: var(--color-bg-elevated);
