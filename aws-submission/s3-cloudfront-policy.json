@@ -6,7 +6,7 @@
       "Effect": "Allow",
       "Principal": "*",
       "Action": "s3:GetObject",
-      "Resource": "arn:aws:s3:::balentinetech-portfolio-ok-2026db-708499049952-us-east-2-an/*"
+      "Resource": "arn:aws:s3:::balentine-tech-portfolio-ok-2026db-708499049952-us-east-2-an/*"
     }
   ]
 }
