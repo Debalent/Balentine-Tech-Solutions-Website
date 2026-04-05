@@ -2,20 +2,15 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "AllowCloudFrontServicePrincipalReadOnly",
+      "Sid": "PublicReadGetObject",
       "Effect": "Allow",
-      "Principal": {
-        "Service": "cloudfront.amazonaws.com"
-      },
+      "Principal": "*",
       "Action": "s3:GetObject",
-      "Resource": "arn:aws:s3:::YOUR_BUCKET_NAME/*",
-      "Condition": {
-        "StringEquals": {
-          "AWS:SourceArn": "arn:aws:cloudfront::YOUR_AWS_ACCOUNT_ID:distribution/YOUR_DISTRIBUTION_ID"
-        }
-      }
+      "Resource": "arn:aws:s3:::balentinetech-portfolio-ok-2026db-708499049952-us-east-2-an/*"
     }
   ]
 }
-// Replace YOUR_BUCKET_NAME, YOUR_AWS_ACCOUNT_ID, and YOUR_DISTRIBUTION_ID with your actual values.
-// This policy allows only CloudFront to access your S3 bucket objects.
+// This policy allows CloudFront (via the S3 website endpoint) to serve objects publicly.
+// Bucket: balentinetech-portfolio-ok-2026db-708499049952-us-east-2-an
+// CloudFront URL: https://d37rmtxeon9qnl.cloudfront.net
+// AWS Account ID: 708499049952
