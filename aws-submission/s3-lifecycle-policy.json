@@ -1,0 +1,19 @@
+// AWS S3 Versioning & Lifecycle Policy Example
+// Enable versioning in the S3 bucket settings (no JSON needed)
+// Add this lifecycle rule in the S3 console or as JSON:
+{
+  "Rules": [
+    {
+      "ID": "Move old versions to Glacier",
+      "Status": "Enabled",
+      "Prefix": "",
+      "NoncurrentVersionTransitions": [
+        {
+          "NoncurrentDays": 30,
+          "StorageClass": "GLACIER"
+        }
+      ]
+    }
+  ]
+}
+// This rule moves non-current (old) versions to Glacier after 30 days.
