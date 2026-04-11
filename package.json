@@ -8,5 +8,8 @@
     "start": "echo 'Open index.html in a browser'"
   },
   "author": "Demond Balentine",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1024.0"
+  }
 }

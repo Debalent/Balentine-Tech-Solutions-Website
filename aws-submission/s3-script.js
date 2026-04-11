@@ -47,10 +47,33 @@ async function deleteFile(key) {
   console.log(`Deleted ${key} from ${BUCKET_NAME}`);
 }
 
-// Example usage:
-// (Uncomment to test)
-// uploadFile('localfile.txt', 'uploadedfile.txt');
-// downloadFile('uploadedfile.txt', 'downloadedfile.txt');
-// deleteFile('uploadedfile.txt');
+// Run the full upload → retrieve → delete demo
+async function runDemo() {
+  const TEST_FILE  = path.join(__dirname, "test-upload.txt");
+  const S3_KEY     = "demo/test-upload.txt";
+  const DOWNLOADED = path.join(__dirname, "test-downloaded.txt");
 
-// Add comments above each function for documentation.
+  // Step 1: Create a local test file to upload
+  fs.writeFileSync(TEST_FILE, "Hello from Balentine Tech Solutions — AWS S3 demo file.");
+  console.log("Created local test file:", TEST_FILE);
+
+  // Step 2: Upload the file to S3
+  await uploadFile(TEST_FILE, S3_KEY);
+
+  // Step 3: Retrieve (download) the file back from S3
+  await downloadFile(S3_KEY, DOWNLOADED);
+
+  // Step 4: Print the retrieved file content to confirm success
+  const content = fs.readFileSync(DOWNLOADED, "utf-8");
+  console.log("Retrieved file content:", content);
+
+  // Step 5: Delete the object from S3
+  await deleteFile(S3_KEY);
+
+  // Cleanup local temp files
+  fs.unlinkSync(TEST_FILE);
+  fs.unlinkSync(DOWNLOADED);
+  console.log("Demo complete — upload, retrieve, and delete all successful.");
+}
+
+runDemo().catch(console.error);
