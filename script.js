@@ -165,10 +165,10 @@ contactForm?.addEventListener('submit', async (e) => {
         Sending...
     `;
 
-    // API endpoint — update BACKEND_URL when you deploy your backend next week
+    // API endpoint — Elastic Beanstalk deployed backend
     const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
         ? 'http://localhost:3001'       // Local development
-        : 'https://YOUR_BACKEND_URL';   // Replace with your deployed backend URL next week
+        : 'http://balentinetech-backend-env.eba-pmim6y3b.us-east-2.elasticbeanstalk.com'; // AWS Elastic Beanstalk
 
     // Send form data to backend /api/contact endpoint
     try {
