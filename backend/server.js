@@ -19,12 +19,13 @@ const PORT = process.env.PORT || 3001;
 // Allow requests from your portfolio frontend
 app.use(cors({
     origin: [
-        'https://d37rmtxeon9qnl.cloudfront.net',   // AWS CloudFront
-        'https://debalent.github.io',               // GitHub Pages
-        'http://localhost:3000',                    // Local development
-        'http://localhost:3001',                    // Local development (alt port)
-        'http://127.0.0.1:5500',                    // VS Code Live Server
-        'http://balentinetech-backend-env.eba-pmim6y3b.us-east-2.elasticbeanstalk.com' // Elastic Beanstalk
+        'https://d37rmtxeon9qnl.cloudfront.net',                                        // AWS CloudFront
+        'https://debalent.github.io',                                                   // GitHub Pages
+        'http://localhost:3000',                                                        // Local development
+        'http://localhost:3001',                                                        // Local development (alt port)
+        'http://127.0.0.1:5500',                                                        // VS Code Live Server
+        'http://balentinetech-backend-env.eba-pmim6y3b.us-east-2.elasticbeanstalk.com', // Elastic Beanstalk
+        'http://balentinetech-solutions-frontend.s3-website-us-east-2.amazonaws.com'   // S3 Static Website
     ],
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type']

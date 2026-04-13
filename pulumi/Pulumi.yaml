@@ -1,0 +1,7 @@
+name: balentine-tech-solutions
+description: Infrastructure as Code for Balentine Tech Solutions — S3, security groups, and CloudWatch monitoring
+runtime: nodejs
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-typescript
