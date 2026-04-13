@@ -1,0 +1,17 @@
+{
+  "name": "balentine-tech-solutions-iac",
+  "version": "1.0.0",
+  "description": "Pulumi IaC for Balentine Tech Solutions",
+  "main": "index.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@pulumi/aws": "^6.0.0",
+    "@pulumi/pulumi": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18",
+    "typescript": "^5.0.0"
+  }
+}
