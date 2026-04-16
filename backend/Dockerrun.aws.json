@@ -1,12 +1,12 @@
 {
   "AWSEBDockerrunVersion": 1,
   "Image": {
-    "Name": "<your-dockerhub-username>/your-backend-image:latest",
+    "Name": "debalent/balentinetech-backend:latest",
     "Update": "true"
   },
   "Ports": [
     {
-      "ContainerPort": 3000
+      "ContainerPort": 3001
     }
   ],
   "Logging": "/var/log/app"
