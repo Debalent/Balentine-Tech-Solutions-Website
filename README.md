@@ -1,18 +1,43 @@
-# Balentine Tech Solutions — Portfolio Website
+﻿# Balentine Tech Solutions — Portfolio Website
 
-Live site: **[debalent.github.io/Balentine-Tech-Solutions-Website](https://debalent.github.io/Balentine-Tech-Solutions-Website/)**
+A full-stack portfolio website for **Demond Balentine Sr.**, full-stack developer and technical founder — deployed on AWS with Docker, CI/CD, and Infrastructure as Code.
 
-Personal portfolio and business site for **Demond Balentine Sr.**, full-stack developer and technical founder.
+---
+
+## Live URLs
+
+| Service | URL |
+|---------|-----|
+| **Frontend** (CloudFront CDN) | https://d3mlam2b9qbwyy.cloudfront.net |
+| **Backend API** (Elastic Beanstalk) | http://Balentinetech-backend-env.eba-pmim6y3b.us-east-2.elasticbeanstalk.com/api/health |
+| **GitHub Pages** (static mirror) | https://debalent.github.io/Balentine-Tech-Solutions-Website/ |
 
 ---
 
 ## Tech Stack
 
-- **HTML5** — semantic structure, accessibility attributes
-- **CSS3** — custom properties (design tokens), dark/light themes, responsive layouts, animations
-- **Vanilla JavaScript** — no frameworks, no build step
-- **Google Fonts** — Inter + Space Grotesk
-- **GitHub Pages** — static hosting via GitHub Actions
+### Frontend
+- **React 18 + Vite** — component-based UI, fast HMR
+- **CSS3** — custom properties (design tokens), dark/light themes, responsive layouts
+- **Hosted on:** AWS S3 + CloudFront (CDN, HTTPS, cache invalidation on deploy)
+
+### Backend
+- **Node.js + Express** — REST API, contact form, project data
+- **PostgreSQL (RDS)** — projects table, DB health check endpoint
+- **Nodemailer** — contact form email delivery
+- **Hosted on:** AWS Elastic Beanstalk (Docker Compose, Amazon Linux 2023)
+
+### Infrastructure (IaC — Pulumi TypeScript)
+- **VPC** — custom networking with public/private subnets
+- **EC2** — t2.micro instance with Docker (backup backend host)
+- **RDS** — PostgreSQL 15.17 in private subnet
+- **CloudFront** — OAC, SPA routing, HTTPS redirect
+- **SNS + CloudWatch** — alarm notifications via email
+
+### CI/CD
+- **GitHub Actions** — test → build → parallel deploy (frontend S3 + backend EB)
+- **Docker Hub** — image registry (`debalent/balentinetech-frontend`, `debalent/balentinetech-backend`)
+- **Automatic rollback** — on EB health failure, reverts to last known-good version
 
 ---
 
@@ -20,102 +45,110 @@ Personal portfolio and business site for **Demond Balentine Sr.**, full-stack de
 
 ```
 /
-├── index.html              # Main page (all sections)
-├── styles.css              # Full design system & component styles
-├── script.js               # Interactivity (nav, theme, sliders, forms)
-├── assets/
-│   ├── logo.jpg            # Brand logo (nav + hero)
-│   ├── about-primary.jpg   # About section main photo
-│   ├── profile-photo.jpg   # About section secondary photo
-│   ├── hero-image.jpg      # Hero background image
-│   ├── creatorsync-1.png   # CreatorSync project screenshot 1
-│   ├── creatorsync-2.png   # CreatorSync project screenshot 2
-│   └── resume.pdf          # Downloadable resume
-├── .github/
-│   └── workflows/
-│       └── deploy.yml      # GitHub Actions → GitHub Pages deployment
-└── README.md
++-- index.html                  # Static landing page (original)
++-- styles.css                  # Original site styles
++-- script.js                   # Original site scripts
++-- frontend/                   # React + Vite app (primary frontend)
+|   +-- src/
+|   +-- public/
+|   +-- vite.config.js
+|   +-- package.json
++-- backend/                    # Node.js / Express API
+|   +-- server.js               # Main server (API routes, DB, email)
+|   +-- Dockerfile              # Container definition
+|   +-- docker-compose.yml      # EB deployment descriptor (AL2023)
+|   +-- .ebextensions/
+|   |   +-- health.config       # Sets EB health check to /api/health
+|   +-- package.json
++-- pulumi/                     # Pulumi IaC (TypeScript)
+|   +-- index.ts                # All 40 AWS resources defined here
+|   +-- Pulumi.yaml
+|   +-- Pulumi.prod.yaml
++-- aws-submission/             # Assignment submission artifacts
+|   +-- README.md               # Full AWS deployment documentation
+|   +-- s3-cloudfront-policy.json
+|   +-- s3-lifecycle-policy.json
+|   +-- s3-script.js
++-- .github/
+|   +-- workflows/
+|       +-- deploy-aws.yml      # Main CI/CD pipeline (push to main)
+|       +-- deploy.yml          # GitHub Pages deploy
++-- Dockerfile                  # Root-level Docker definition
++-- README.md                   # This file
 ```
+
+---
+
+## CI/CD Pipeline
+
+Every push to `main` triggers a 4-job pipeline:
+
+| Job | What it does |
+|-----|-------------|
+| **Test Backend** | `npm install` + server startup smoke test |
+| **Build & Push Docker** | Builds frontend + backend images, pushes to Docker Hub with `:latest` and `:<sha>` tags |
+| **Deploy Frontend to S3** | Builds React app, syncs `dist/` to S3, invalidates CloudFront |
+| **Deploy Backend to EB** | Stamps SHA into `docker-compose.yml`, zips + uploads to S3, creates EB version, deploys, polls until Ready, verifies health |
+
+Rollback job runs automatically if the EB deploy job fails.
+
+---
+
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/health` | Server health check |
+| GET | `/api/health/db` | RDS connectivity check |
+| GET | `/api/projects` | Portfolio projects (static data) |
+| GET | `/api/projects/db` | Portfolio projects (from RDS) |
+| GET | `/api/about` | About section data |
+| POST | `/api/contact` | Contact form submission |
 
 ---
 
 ## Local Development
 
-No build tools required. Open directly in a browser:
-
 ```bash
-# Option 1: open directly
+# Backend
+cd backend
+npm install
+node server.js          # http://localhost:3001
+
+# Frontend (React)
+cd frontend
+npm install
+npm run dev             # http://localhost:5173
+
+# Original static site
 start index.html
-
-# Option 2: serve with Python (avoids any local CORS issues)
-python -m http.server 8080
-# then visit http://localhost:8080
 ```
 
 ---
 
-## Deploying Changes
+## Infrastructure (Pulumi)
 
-Any push to `main` automatically deploys via GitHub Actions:
+All AWS resources are defined in `pulumi/index.ts` and provisioned with:
 
 ```bash
-git add .
-git commit -m "your message"
-git push origin main
+cd pulumi
+npm install
+export AWS_PROFILE=balentinetech
+export PULUMI_ACCESS_TOKEN=<token>
+pulumi up --yes
 ```
 
-Deployment takes ~1–2 minutes. Check the **Actions** tab on GitHub to monitor progress.
+Resources include: VPC, subnets, IGW, route tables, security groups, EC2, RDS, S3, CloudFront (OAC), Elastic Beanstalk app + environment, SNS topic + subscription, CloudWatch alarms, IAM users + policies.
 
 ---
 
-## Customizing Content
+## Monitoring
 
-### Update text content
-All page content is in `index.html`. Sections are clearly commented:
-- `<!-- Navigation -->`
-- `<!-- Hero Section -->`
-- `<!-- Featured Projects Section -->`
-- `<!-- Tech Stack Section -->`
-- `<!-- About Section -->`
-- `<!-- Services Section -->`
-- `<!-- Blog/Insights Section -->`
-- `<!-- Contact Section -->`
-
-### Update colors / design tokens
-All colors, spacing, and typography are CSS variables at the top of `styles.css`:
-
-```css
-:root {
-    --color-accent: #6366f1;        /* primary purple */
-    --color-bg-primary: #0a0a0a;    /* dark background */
-    --color-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-    /* ... */
-}
-```
-
-### Add a project screenshot slider
-1. Copy images to `assets/`
-2. Replace the project card's `project-image-placeholder` div with:
-```html
-<div class="project-screenshots">
-    <img src="assets/your-image-1.png" alt="Description" class="screenshot-slide active">
-    <img src="assets/your-image-2.png" alt="Description" class="screenshot-slide">
-    <div class="screenshot-dots">
-        <span class="dot active" onclick="showSlide(this, 0)"></span>
-        <span class="dot" onclick="showSlide(this, 1)"></span>
-    </div>
-</div>
-```
-
-### Update the resume
-Replace `assets/resume.pdf` with a new file of the same name, then push.
-The download buttons in the hero and footer will automatically serve the new file.
-
-### Toggle dark/light theme default
-Change the `data-theme` attribute on the `<html>` tag in `index.html`:
-```html
-<html lang="en" data-theme="dark">   <!-- or data-theme="light" -->
-```
+CloudWatch alarms notify `balentinetechsolutions@gmail.com` via SNS on:
+- EC2 CPU > 80%
+- EB environment health degraded/severe
+- HTTP 5xx error spike (> 10 in 5 min)
+- Unhealthy ELB target count >= 1
 
 ---
 
