@@ -64,13 +64,15 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # ── Frontend image (nginx serving static files) ──
+      # ── Frontend image (multi-stage: Vite build → nginx serve on port 3000) ──
       - name: Build & push frontend image
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: ./Dockerfile
+          context: ./frontend
+          file: ./frontend/Dockerfile
           push: true
+          build-args: |
+            VITE_API_URL=http://${{ secrets.EC2_HOST }}:3001
           tags: |
             ${{ env.DOCKERHUB_USERNAME }}/balentinetech-frontend:latest
             ${{ env.DOCKERHUB_USERNAME }}/balentinetech-frontend:${{ github.sha }}
@@ -99,6 +101,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build React app for production
+        working-directory: frontend
+        env:
+          VITE_API_URL: http://${{ secrets.EC2_HOST }}:3001
+        run: npm run build
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -106,18 +123,10 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Sync frontend files to S3
+      - name: Sync built React app (dist/) to S3
         run: |
-          aws s3 sync . s3://${{ secrets.S3_BUCKET_NAME }} \
-            --exclude ".git/*" \
-            --exclude "backend/*" \
-            --exclude "node_modules/*" \
-            --exclude ".github/*" \
-            --exclude "pulumi/*" \
-            --exclude "aws-submission/*" \
-            --exclude "*.zip" \
-            --exclude "*.md" \
-            --exclude "package*.json" \
+          aws s3 sync frontend/dist s3://${{ secrets.S3_BUCKET_NAME }} \
+            --delete \
             --exclude "Dockerfile" \
             --delete
 
