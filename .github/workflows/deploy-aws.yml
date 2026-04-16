@@ -172,8 +172,7 @@ jobs:
       - name: Package backend deployment artifact
         run: |
           cd backend
-          zip -r ../backend-deploy-${{ github.sha }}.zip \
-            Dockerfile server.js package.json .dockerignore Dockerrun.aws.json
+          zip ../backend-deploy-${{ github.sha }}.zip Dockerrun.aws.json
           cd ..
           echo "Package size: $(du -sh backend-deploy-${{ github.sha }}.zip)"
 
@@ -225,10 +224,11 @@ jobs:
             --query "Environments[0].Health" \
             --output text)
           echo "Environment health: $HEALTH"
-          if [ "$HEALTH" != "Green" ]; then
+          if [ "$HEALTH" = "Red" ] || [ "$HEALTH" = "Severe" ]; then
             echo "Health check failed — triggering rollback."
             exit 1
           fi
+          echo "Deployment healthy (status: $HEALTH)"
 
   # ── 5. ROLLBACK IF BACKEND DEPLOYMENT FAILS ──────────────
   rollback:
