@@ -8,9 +8,72 @@ const express = require('express');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
 const rateLimit = require('express-rate-limit');
+const { Pool } = require('pg');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// ============================================
+// DATABASE — PostgreSQL connection pool (RDS)
+// Connection params come from environment vars
+// set via SSM Parameter Store on EC2
+// ============================================
+const pool = new Pool({
+    host:     process.env.DB_HOST,
+    port:     parseInt(process.env.DB_PORT || '5432', 10),
+    database: process.env.DB_NAME     || 'balentinetech',
+    user:     process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 5000,
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+});
+
+// Run once at startup: create the projects table if it doesn't exist yet
+async function initDb() {
+    try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS projects (
+                id          SERIAL PRIMARY KEY,
+                slug        VARCHAR(100) UNIQUE NOT NULL,
+                title       VARCHAR(200) NOT NULL,
+                description TEXT,
+                tech        TEXT[],
+                live_url    VARCHAR(500),
+                github_url  VARCHAR(500),
+                created_at  TIMESTAMPTZ DEFAULT NOW()
+            );
+        `);
+
+        // Seed initial rows only when the table is empty
+        const { rowCount } = await pool.query('SELECT 1 FROM projects LIMIT 1');
+        if (rowCount === 0) {
+            await pool.query(`
+                INSERT INTO projects (slug, title, description, tech, live_url, github_url) VALUES
+                ('salonshop',    'SalonShop',    'All-in-one booking and payments platform for independent beauty professionals.',
+                 ARRAY['React','Node.js','MongoDB','Stripe'],
+                 'https://debalent.github.io/SalonShop/',
+                 'https://github.com/Debalent/SalonShop#readme'),
+                ('creatorsync',  'CreatorSync',  'Multi-tenant SaaS for content creators with subscription management and analytics.',
+                 ARRAY['React','Node.js','Stripe','Docker'],
+                 'https://debalent.github.io/CreatorSync/public/index.html',
+                 'https://github.com/Debalent/CreatorSync#readme'),
+                ('scoutvision',  'ScoutVision',  'AI-powered scouting and talent evaluation platform for coaches and recruiters.',
+                 ARRAY['Next.js','TypeScript','AI/ML','Analytics'],
+                 'https://debalent.github.io/ScoutVision-Production/',
+                 'https://github.com/Debalent/ScoutVision-Production#readme')
+                ON CONFLICT (slug) DO NOTHING;
+            `);
+        }
+        console.log('Database initialised successfully');
+    } catch (err) {
+        // Non-fatal — API still works without a DB connection (graceful degradation)
+        console.warn('Database init skipped (no DB connection):', err.message);
+    }
+}
+
+initDb();
 
 // ============================================
 // MIDDLEWARE
@@ -170,6 +233,43 @@ app.get('/api/about', (req, res) => {
         graduating: 'July 2026',
         school: 'Atlas School'
     });
+});
+
+// ============================================
+// GET /api/health/db
+// Verifies live connectivity to RDS PostgreSQL
+// ============================================
+app.get('/api/health/db', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT NOW() AS db_time');
+        res.json({
+            status: 'ok',
+            db: 'connected',
+            db_time: result.rows[0].db_time,
+        });
+    } catch (err) {
+        res.status(503).json({
+            status: 'error',
+            db: 'unreachable',
+            message: err.message,
+        });
+    }
+});
+
+// ============================================
+// GET /api/projects/db
+// Returns portfolio projects from RDS
+// ============================================
+app.get('/api/projects/db', async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT slug, title, description, tech, live_url, github_url FROM projects ORDER BY id ASC'
+        );
+        res.json({ source: 'rds', projects: result.rows });
+    } catch (err) {
+        console.error('DB query error:', err.message);
+        res.status(503).json({ error: 'Database unavailable. Try /api/projects for the static list.' });
+    }
 });
 
 // ============================================
