@@ -188,7 +188,8 @@ jobs:
             --application-name ${{ env.EB_APPLICATION }} \
             --version-label "deploy-${{ github.sha }}" \
             --source-bundle S3Bucket="${{ secrets.S3_BUCKET_NAME }}",S3Key="deployments/backend-deploy-${{ github.sha }}.zip" \
-            --description "GitHub Actions — ${{ github.sha }}"
+            --description "GitHub Actions - ${{ github.sha }}" \
+          || echo "Version already exists, proceeding with deploy"
 
       - name: Deploy new version to environment
         run: |
