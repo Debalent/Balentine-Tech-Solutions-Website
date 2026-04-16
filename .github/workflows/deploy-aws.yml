@@ -165,16 +165,18 @@ jobs:
           echo "Current version: $CURRENT"
 
       # Use the Docker Hub image tag via Dockerrun.aws.json
-      - name: Stamp SHA into Dockerrun.aws.json
+      - name: Stamp SHA into docker-compose.yml
         run: |
-          sed -i "s|:latest|:${{ github.sha }}|g" backend/Dockerrun.aws.json
+          sed -i "s|:latest|:${{ github.sha }}|g" backend/docker-compose.yml
 
       - name: Package backend deployment artifact
         run: |
           cd backend
-          zip ../backend-deploy-${{ github.sha }}.zip Dockerrun.aws.json
+          zip -r ../backend-deploy-${{ github.sha }}.zip docker-compose.yml .ebextensions/
           cd ..
           echo "Package size: $(du -sh backend-deploy-${{ github.sha }}.zip)"
+          echo "Zip contents:"
+          unzip -l backend-deploy-${{ github.sha }}.zip
 
       - name: Upload artifact to S3
         run: |
