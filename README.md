@@ -10,7 +10,7 @@ A full-stack portfolio website for **Demond Balentine Sr.**, full-stack develope
 |---------|-----|
 | **Frontend** (CloudFront CDN) | https://d3mlam2b9qbwyy.cloudfront.net |
 | **Backend API** (Elastic Beanstalk) | http://Balentinetech-backend-env.eba-pmim6y3b.us-east-2.elasticbeanstalk.com/api/health |
-| **GitHub Pages** (static mirror) | https://debalent.github.io/Balentine-Tech-Solutions-Website/ |
+| **Live Website** | [https://d3mlam2b9qbwyy.cloudfront.net](https://d3mlam2b9qbwyy.cloudfront.net) |
 
 ---
 
