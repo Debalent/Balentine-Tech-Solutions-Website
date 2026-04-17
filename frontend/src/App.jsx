@@ -18,7 +18,7 @@ function Nav() {
   return (
     <nav className={`nav${scrolled ? ' nav--scrolled' : ''}`}>
       <a href="#hero" className="nav__logo">
-        <span className="nav__logo-text">BTS</span>
+        <img src="/assets/logo.jpg" alt="Balentine Tech Solutions" className="nav__logo-img" />
       </a>
       <ul className="nav__links">
         {['Projects', 'About', 'Services', 'Contact'].map((label) => (
@@ -168,6 +168,9 @@ function About() {
   return (
     <section id="about" className="section">
       <div className="container about-grid">
+        <div className="about__photo">
+          <img src="/assets/profile-photo.jpg" alt="Demond Balentine Sr." className="about__headshot" />
+        </div>
         <div className="about__text">
           <h2 className="section__title">About Me</h2>
           <p>
