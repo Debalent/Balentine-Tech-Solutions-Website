@@ -210,7 +210,7 @@ function About() {
             <strong> Pulumi IaC</strong> and automated with <strong>GitHub Actions</strong>.
           </p>
           <a
-            href="/assets/resume.pdf"
+            href="/assets/resume.html"
             download
             className="btn btn--primary"
           >
