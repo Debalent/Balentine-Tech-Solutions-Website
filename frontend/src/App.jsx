@@ -99,7 +99,7 @@ function Projects() {
         return r.json();
       })
       .then((data) => {
-        setProjects(data);
+        setProjects(Array.isArray(data) ? data : (data.projects || []));
         setStatus('ok');
       })
       .catch(() => setStatus('error'));
