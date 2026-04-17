@@ -61,8 +61,17 @@ function Hero() {
 // Projects — fetched from backend API
 // ─────────────────────────────────────────────────────────────
 function ProjectCard({ project }) {
+  const thumb = project.screenshots && project.screenshots[0];
   return (
     <article className="project-card">
+      {thumb && (
+        <img
+          src={`/${thumb}`}
+          alt={`${project.title} screenshot`}
+          className="project-card__img"
+          loading="lazy"
+        />
+      )}
       <div className="project-card__header">
         <h3 className="project-card__title">{project.title}</h3>
         <div className="project-card__tech">
