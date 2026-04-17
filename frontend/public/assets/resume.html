@@ -182,7 +182,7 @@
       Tulsa, OK &nbsp;|&nbsp; (479) 250-2573 &nbsp;|&nbsp;
       <a href="mailto:balentinetechsolutions@gmail.com">balentinetechsolutions@gmail.com</a> &nbsp;|&nbsp;
       <a href="https://github.com/Debalent" target="_blank">github.com/Debalent</a> &nbsp;|&nbsp;
-      <a href="https://debalent.github.io/Balentine-Tech-Solutions-Website" target="_blank">debalent.github.io/Balentine-Tech-Solutions-Website</a>
+      <a href="https://d3mlam2b9qbwyy.cloudfront.net" target="_blank">balentinetechsolutions.com</a>
     </div>
   </header>
 
@@ -190,12 +190,13 @@
   <section class="summary">
     <h2>Summary</h2>
     <p>
-      Ambitious full-stack developer and technical founder with a builder's mindset shaped by military service,
-      entrepreneurial drive, and intensive software engineering training at Atlas School (Tulsa). I design and ship
-      production-ready SaaS platforms using Next.js, React, TypeScript, and Supabase, leveraging AI-enhanced
-      development workflows to deliver enterprise-grade quality at startup speed. Founder of Balentine Tech Solutions
-      and creator of RelayPoint, CreatorSync, and ScoutVision. Professionally advised by OKSBDC, member of Gradient
-      (Tulsa innovation workspace), and participant in the Builders+Backers Idea Accelerator. Graduating August 2026.
+      Full-stack developer, cloud architect, and technical founder with a builder's mindset shaped by military service,
+      entrepreneurial drive, and intensive software engineering training at Atlas School (Tulsa). I design, build, and
+      deploy production-ready SaaS platforms and cloud-native applications using React, Node.js, TypeScript, and AWS —
+      with full CI/CD pipelines, Infrastructure as Code via Pulumi, and containerized Docker deployments on Elastic
+      Beanstalk. Founder of Balentine Tech Solutions and creator of SalonShop, CreatorSync, ScoutVision, and RelayPoint.
+      Professionally advised by OKSBDC, member of Gradient (Tulsa innovation workspace), and participant in the
+      Builders+Backers Idea Accelerator. Graduating August 2026.
     </p>
   </section>
 
@@ -230,11 +231,15 @@
       </tr>
       <tr>
         <td>Databases:</td>
-        <td>PostgreSQL, Supabase, Prisma ORM, SQL</td>
+        <td>PostgreSQL (AWS RDS), Supabase, Prisma ORM, SQL</td>
+      </tr>
+      <tr>
+        <td>Cloud / DevOps:</td>
+        <td>AWS (S3, CloudFront, EC2, RDS, Elastic Beanstalk, IAM, CloudWatch, SNS), Pulumi IaC, Docker, Docker Compose, GitHub Actions CI/CD</td>
       </tr>
       <tr>
         <td>Tools:</td>
-        <td>Git, GitHub, GitHub Actions, Docker (basics), Vercel, Netlify</td>
+        <td>Git, GitHub, Vercel, Netlify, Nodemailer, express-rate-limit</td>
       </tr>
       <tr>
         <td>AI / Workflow:</td>
@@ -262,8 +267,9 @@
       </div>
       <div class="entry-sub">Balentine Tech Solutions &nbsp;|&nbsp; Tulsa, OK</div>
       <ul>
-        <li>Founded and operate a software development consultancy delivering custom web applications and SaaS products.</li>
-        <li>Manage full project lifecycle: discovery, architecture, development, deployment, and client delivery.</li>
+        <li>Founded and operate a software development consultancy delivering custom web applications, SaaS products, and cloud infrastructure.</li>
+        <li>Architected and deployed full-stack portfolio platform on AWS: React SPA on S3/CloudFront, Node.js API on Elastic Beanstalk (Docker), PostgreSQL on RDS — 40 resources provisioned via Pulumi IaC.</li>
+        <li>Built 4-job GitHub Actions CI/CD pipeline: automated testing, Docker image builds, parallel S3 and EB deployments with CloudFront cache invalidation.</li>
         <li>Leverage AI-enhanced workflows to deliver enterprise-quality results at startup timelines and budgets.</li>
       </ul>
     </div>
@@ -309,6 +315,32 @@
   <!-- Projects -->
   <section>
     <h2>Projects</h2>
+
+    <div class="entry">
+      <div class="entry-header">
+        <span class="entry-title">Balentine Tech Solutions Portfolio</span>
+        <span class="entry-date">Full-Stack · AWS Cloud</span>
+      </div>
+      <div class="entry-sub">React, Node.js, Express, PostgreSQL, Docker, AWS, Pulumi, GitHub Actions</div>
+      <ul>
+        <li>Designed and deployed a production portfolio site on AWS: React/Vite SPA on S3 + CloudFront CDN, Express REST API in Docker on Elastic Beanstalk, PostgreSQL on RDS in a private subnet.</li>
+        <li>Provisioned all 40 AWS resources (VPC, subnets, security groups, IAM, CloudWatch alarms, SNS) as code using Pulumi TypeScript.</li>
+        <li>Built a 4-job GitHub Actions pipeline with parallel frontend (S3 sync + CloudFront invalidation) and backend (EB rolling deploy) stages and automated rollback on health check failure.</li>
+        <li>Implemented least-privilege IAM roles, private RDS subnet, HTTPS end-to-end via CloudFront, and rate-limited contact form with Nodemailer email delivery.</li>
+      </ul>
+    </div>
+
+    <div class="entry">
+      <div class="entry-header">
+        <span class="entry-title">SalonShop</span>
+        <span class="entry-date">Full-Stack SaaS</span>
+      </div>
+      <div class="entry-sub">React, Node.js, MongoDB, Stripe</div>
+      <ul>
+        <li>All-in-one booking, payments, and growth platform for independent beauty professionals.</li>
+        <li>Integrated Stripe for appointment deposits and service payments; built admin dashboard for booking management.</li>
+      </ul>
+    </div>
 
     <div class="entry">
       <div class="entry-header">
