@@ -4,6 +4,10 @@ import * as aws from "@pulumi/aws";
 const stackName = pulumi.getStack();
 const projectName = "balentinetech";
 
+const config = new pulumi.Config();
+const dbPassword = config.requireSecret("dbPassword");
+const dbUsername = config.get("dbUsername") ?? "balentineadmin";
+
 // ============================================================
 // VPC — isolated network for all backend/database resources
 // ============================================================
@@ -241,7 +245,7 @@ const cicdPolicy = new aws.iam.UserPolicy(`${projectName}-cicd-policy`, {
 const dbPasswordParam = new aws.ssm.Parameter(`${projectName}-db-password`, {
     name: `/${projectName}/db/password`,
     type: "SecureString",
-    value: "REPLACE_BEFORE_DEPLOY",   // overwrite via: aws ssm put-parameter --overwrite
+    value: dbPassword,
     description: "RDS master password for BalentineTech database",
     tags: {
         Project: "BalentineTechSolutions",
@@ -252,7 +256,7 @@ const dbPasswordParam = new aws.ssm.Parameter(`${projectName}-db-password`, {
 const dbUsernameParam = new aws.ssm.Parameter(`${projectName}-db-username`, {
     name: `/${projectName}/db/username`,
     type: "String",
-    value: "balentineadmin",
+    value: dbUsername,
     description: "RDS master username for BalentineTech database",
     tags: {
         Project: "BalentineTechSolutions",
@@ -304,22 +308,22 @@ const rdsSg = new aws.ec2.SecurityGroup(`${projectName}-rds-sg`, {
 });
 
 const rdsInstance = new aws.rds.Instance(`${projectName}-db`, {
-    identifier: "database-1",
+    identifier: `${projectName}-db-01`,
     engine: "postgres",
-    engineVersion: "15.4",
+    engineVersion: "15.17",
     instanceClass: "db.t3.micro",
     allocatedStorage: 20,
     storageType: "gp2",
     storageEncrypted: true,
     dbName: "balentinetech",
-    username: "balentineadmin",
-    password: dbPasswordParam.value,   // read from SSM parameter at Pulumi apply time
+    username: dbUsername,
+    password: dbPassword,
     dbSubnetGroupName: dbSubnetGroup.name,
     vpcSecurityGroupIds: [rdsSg.id],
-    publiclyAccessible: false,         // private subnet — no direct internet access
-    multiAz: false,                    // single-AZ for cost; flip to true for production HA
+    publiclyAccessible: false,
+    multiAz: false,
     backupRetentionPeriod: 7,
-    deletionProtection: false,         // set to true once in production
+    deletionProtection: false,
     skipFinalSnapshot: true,
     parameterGroupName: "default.postgres15",
     tags: {
@@ -337,7 +341,7 @@ const rdsInstance = new aws.rds.Instance(`${projectName}-db`, {
 // (restrict SSH cidrBlock to your IP in production)
 // Attach to public subnet so EB/EC2 can reach the internet
 const ec2Sg = new aws.ec2.SecurityGroup(`${projectName}-ec2-sg`, {
-    description: "Balentine Tech — EC2 backend access",
+    description: "Balentine Tech - EC2 backend access",
     vpcId: vpc.id,
     ingress: [
         { description: "HTTP",       protocol: "tcp", fromPort: 80,   toPort: 80,   cidrBlocks: ["0.0.0.0/0"] },
@@ -382,18 +386,12 @@ chmod +x /home/ubuntu/start.sh
 /home/ubuntu/start.sh
 `;
 
-// Lookup the latest Ubuntu 22.04 LTS AMI in us-east-2
-const ubuntuAmi = aws.ec2.getAmi({
-    mostRecent: true,
-    owners: ["099720109477"],   // Canonical
-    filters: [
-        { name: "name",                 values: ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"] },
-        { name: "virtualization-type",  values: ["hvm"] },
-    ],
-});
+// Ubuntu 22.04 LTS (Jammy) — us-east-2 — ami-0862be96e41dcbf74 (Canonical, hvm:ebs-ssd)
+// Hardcoded to avoid requiring ec2:DescribeImages IAM permission at deploy time
+const ubuntuAmiId = "ami-0862be96e41dcbf74";
 
 const ec2Instance = new aws.ec2.Instance(`${projectName}-backend-ec2`, {
-    ami: ubuntuAmi.then((ami) => ami.id),
+    ami: ubuntuAmiId,
     instanceType: "t3.micro",
     subnetId: publicSubnetA.id,
     vpcSecurityGroupIds: [ec2Sg.id],
@@ -513,6 +511,34 @@ const cfDistribution = new aws.cloudfront.Distribution(
                     originProtocolPolicy: "http-only",   // S3 website endpoint is HTTP only
                     originSslProtocols: ["TLSv1.2"],
                 },
+            },
+            {
+                domainName: "Balentinetech-backend-env.eba-pmim6y3b.us-east-2.elasticbeanstalk.com",
+                originId: "EBBackendOrigin",
+                customOriginConfig: {
+                    httpPort: 80,
+                    httpsPort: 443,
+                    originProtocolPolicy: "http-only",
+                    originSslProtocols: ["TLSv1.2"],
+                },
+            },
+        ],
+        orderedCacheBehaviors: [
+            {
+                pathPattern: "/api/*",
+                targetOriginId: "EBBackendOrigin",
+                viewerProtocolPolicy: "redirect-to-https",
+                allowedMethods: ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"],
+                cachedMethods: ["GET", "HEAD"],
+                compress: false,
+                forwardedValues: {
+                    queryString: true,
+                    headers: ["Origin", "Access-Control-Request-Headers", "Access-Control-Request-Method"],
+                    cookies: { forward: "none" },
+                },
+                minTtl: 0,
+                defaultTtl: 0,
+                maxTtl: 0,
             },
         ],
         defaultCacheBehavior: {
@@ -645,7 +671,7 @@ const dbConnectionAlarm = new aws.cloudwatch.MetricAlarm(
         threshold: 1,
         treatMissingData: "breaching",
         alarmActions: [alertTopic.arn],
-        dimensions: { DBInstanceIdentifier: "database-1" },
+        dimensions: { DBInstanceIdentifier: rdsInstance.identifier },
         tags: { Project: "BalentineTechSolutions", ManagedBy: "Pulumi" },
     }
 );
@@ -661,7 +687,7 @@ const rdsCpuAlarm = new aws.cloudwatch.MetricAlarm(`${projectName}-rds-cpu`, {
     statistic: "Average",
     threshold: 80,
     alarmActions: [alertTopic.arn],
-    dimensions: { DBInstanceIdentifier: "database-1" },
+    dimensions: { DBInstanceIdentifier: rdsInstance.identifier },
     tags: { Project: "BalentineTechSolutions", ManagedBy: "Pulumi" },
 });
 
