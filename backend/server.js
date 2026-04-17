@@ -82,8 +82,7 @@ initDb();
 // Allow requests from your portfolio frontend
 app.use(cors({
     origin: [
-        'https://d37rmtxeon9qnl.cloudfront.net',                                        // AWS CloudFront
-        'https://debalent.github.io',                                                   // GitHub Pages
+        'https://d3mlam2b9qbwyy.cloudfront.net',                                         // AWS CloudFront (live site)
         'http://localhost:3000',                                                        // Local development
         'http://localhost:3001',                                                        // Local development (alt port)
         'http://127.0.0.1:5500',                                                        // VS Code Live Server
