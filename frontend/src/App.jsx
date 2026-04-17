@@ -60,18 +60,43 @@ function Hero() {
 // ─────────────────────────────────────────────────────────────
 // Projects — fetched from backend API
 // ─────────────────────────────────────────────────────────────
+function ScreenshotCarousel({ title, screenshots }) {
+  const [idx, setIdx] = useState(0);
+  if (!screenshots || screenshots.length === 0) return null;
+  const prev = (e) => { e.preventDefault(); setIdx((i) => (i - 1 + screenshots.length) % screenshots.length); };
+  const next = (e) => { e.preventDefault(); setIdx((i) => (i + 1) % screenshots.length); };
+  return (
+    <div className="carousel">
+      <img
+        src={`/${screenshots[idx]}`}
+        alt={`${title} screenshot ${idx + 1}`}
+        className="project-card__img"
+        loading="lazy"
+      />
+      {screenshots.length > 1 && (
+        <>
+          <button className="carousel__btn carousel__btn--prev" onClick={prev} aria-label="Previous screenshot">&#8249;</button>
+          <button className="carousel__btn carousel__btn--next" onClick={next} aria-label="Next screenshot">&#8250;</button>
+          <div className="carousel__dots">
+            {screenshots.map((_, i) => (
+              <button
+                key={i}
+                className={`carousel__dot${i === idx ? ' carousel__dot--active' : ''}`}
+                onClick={(e) => { e.preventDefault(); setIdx(i); }}
+                aria-label={`Screenshot ${i + 1}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function ProjectCard({ project }) {
-  const thumb = project.screenshots && project.screenshots[0];
   return (
     <article className="project-card">
-      {thumb && (
-        <img
-          src={`/${thumb}`}
-          alt={`${project.title} screenshot`}
-          className="project-card__img"
-          loading="lazy"
-        />
-      )}
+      <ScreenshotCarousel title={project.title} screenshots={project.screenshots} />
       <div className="project-card__header">
         <h3 className="project-card__title">{project.title}</h3>
         <div className="project-card__tech">

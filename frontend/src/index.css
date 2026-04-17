@@ -181,6 +181,53 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
   object-fit: cover;
   display: block;
 }
+.carousel {
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.carousel__btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+.carousel__btn:hover { background: rgba(0,0,0,0.8); }
+.carousel__btn--prev { left: 8px; }
+.carousel__btn--next { right: 8px; }
+.carousel__dots {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 2;
+}
+.carousel__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.45);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s;
+}
+.carousel__dot--active { background: #fff; }
 .project-card__header {
   padding: 1.5rem 1.5rem 0;
 }
