@@ -1,2 +1,5 @@
 config:
   aws:region: us-east-2
+  balentine-tech-solutions:dbPassword:
+    secure: AAABAJPDwvbu4G280MZvCPzbMcqrtQMjR4kBt+HdWdlzoaOCCzijha2HdJftrw==
+  balentine-tech-solutions:dbUsername: balentineadmin

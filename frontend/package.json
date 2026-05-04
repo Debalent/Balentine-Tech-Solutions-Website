@@ -10,6 +10,7 @@
     "test": "echo 'No unit tests yet — build check only' && npm run build"
   },
   "dependencies": {
+    "@stripe/stripe-js": "^9.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

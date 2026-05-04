@@ -4,11 +4,75 @@
 // ============================================
 
 require('dotenv').config();
+const crypto  = require('crypto');
 const express = require('express');
-const cors = require('cors');
+const helmet  = require('helmet');
+const cors    = require('cors');
 const nodemailer = require('nodemailer');
-const rateLimit = require('express-rate-limit');
-const { Pool } = require('pg');
+const rateLimit  = require('express-rate-limit');
+const { Pool }   = require('pg');
+const stripe     = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+// ============================================
+// SECURITY HELPERS
+// ============================================
+
+// AES-256-GCM field-level encryption for PII stored in PostgreSQL.
+// Set ENCRYPTION_KEY to a 64-char hex string (32 bytes) in .env:
+//   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+const ENCRYPTION_ALGO = 'aes-256-gcm';
+const _encKey = process.env.ENCRYPTION_KEY
+    ? Buffer.from(process.env.ENCRYPTION_KEY, 'hex')
+    : null;
+
+if (!_encKey || _encKey.length !== 32) {
+    console.warn('[security] ENCRYPTION_KEY missing or wrong length — PII will NOT be encrypted at rest.');
+}
+
+/**
+ * Encrypts a plaintext string with AES-256-GCM.
+ * Returns a colon-joined string: iv:authTag:ciphertext (all hex).
+ * Falls back to plaintext if the key is unavailable.
+ */
+function encryptField(plaintext) {
+    if (!_encKey) return plaintext;
+    const iv      = crypto.randomBytes(12);  // 96-bit IV (recommended for GCM)
+    const cipher  = crypto.createCipheriv(ENCRYPTION_ALGO, _encKey, iv);
+    const enc     = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+    const tag     = cipher.getAuthTag();
+    return `${iv.toString('hex')}:${tag.toString('hex')}:${enc.toString('hex')}`;
+}
+
+/**
+ * Decrypts a value produced by encryptField.
+ * Returns the plaintext, or the original value if it is not encrypted.
+ */
+function decryptField(value) {
+    if (!_encKey || !value || !value.includes(':')) return value;
+    try {
+        const [ivHex, tagHex, dataHex] = value.split(':');
+        const iv      = Buffer.from(ivHex,  'hex');
+        const tag     = Buffer.from(tagHex, 'hex');
+        const data    = Buffer.from(dataHex, 'hex');
+        const decipher = crypto.createDecipheriv(ENCRYPTION_ALGO, _encKey, iv);
+        decipher.setAuthTag(tag);
+        return decipher.update(data) + decipher.final('utf8');
+    } catch {
+        return value; // graceful degradation — return as-is if decryption fails
+    }
+}
+
+/**
+ * Escapes HTML special characters to prevent XSS injection in email templates.
+ */
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g,  '&amp;')
+        .replace(/</g,  '&lt;')
+        .replace(/>/g,  '&gt;')
+        .replace(/"/g,  '&quot;')
+        .replace(/'/g,  '&#x27;');
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -33,6 +97,19 @@ const pool = new Pool({
 // Run once at startup: create the projects table if it doesn't exist yet
 async function initDb() {
     try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS subscriptions (
+                id                  SERIAL PRIMARY KEY,
+                stripe_session_id   VARCHAR(200) UNIQUE NOT NULL,
+                stripe_customer_id  VARCHAR(200),
+                stripe_sub_id       VARCHAR(200),
+                customer_email      VARCHAR(300),
+                plan                VARCHAR(100),
+                status              VARCHAR(50) DEFAULT 'pending',
+                created_at          TIMESTAMPTZ DEFAULT NOW()
+            );
+        `);
+
         await pool.query(`
             CREATE TABLE IF NOT EXISTS projects (
                 id          SERIAL PRIMARY KEY,
@@ -79,21 +156,123 @@ initDb();
 // MIDDLEWARE
 // ============================================
 
+// Trust the first proxy (AWS ELB / Elastic Beanstalk) so that
+// rate limiting uses the real client IP instead of the load-balancer IP.
+app.set('trust proxy', 1);
+
+// Security headers — sets X-Content-Type-Options, X-Frame-Options,
+// Strict-Transport-Security (HSTS), Referrer-Policy, X-DNS-Prefetch-Control,
+// X-Download-Options, X-Permitted-Cross-Domain-Policies, and removes
+// X-Powered-By to avoid fingerprinting.
+app.use(helmet({
+    // HSTS: tell browsers to only connect over HTTPS for 1 year
+    strictTransportSecurity: {
+        maxAge: 31536000,       // 1 year in seconds
+        includeSubDomains: true,
+        preload: true,
+    },
+    // This is a pure JSON API — no HTML pages are served, so a
+    // restrictive CSP is safe and prevents any accidental script execution.
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'none'"],
+            scriptSrc:  ["'none'"],
+            styleSrc:   ["'none'"],
+            imgSrc:     ["'none'"],
+            connectSrc: ["'self'"],
+            frameAncestors: ["'none'"],
+        },
+    },
+    // Prevent MIME-type sniffing
+    noSniff: true,
+    // Deny framing of API responses
+    frameguard: { action: 'deny' },
+    // Don't send the Referer header when navigating away
+    referrerPolicy: { policy: 'no-referrer' },
+}));
+
 // Allow requests from your portfolio frontend
 app.use(cors({
     origin: [
-        'https://d3mlam2b9qbwyy.cloudfront.net',                                         // AWS CloudFront (live site)
-        'http://localhost:3000',                                                        // Local development
-        'http://localhost:3001',                                                        // Local development (alt port)
-        'http://127.0.0.1:5500',                                                        // VS Code Live Server
-        'http://balentinetech-backend-env.eba-pmim6y3b.us-east-2.elasticbeanstalk.com', // Elastic Beanstalk
-        'http://balentinetech-solutions-frontend.s3-website-us-east-2.amazonaws.com'   // S3 Static Website
+        'https://d3mlam2b9qbwyy.cloudfront.net',                                          // AWS CloudFront (live site — HTTPS)
+        'http://localhost:3000',                                                         // Local development
+        'http://localhost:3001',                                                         // Local development (alt port)
+        'http://localhost:5173',                                                         // Vite dev server
+        'http://127.0.0.1:5500',                                                         // VS Code Live Server
+        // NOTE: the Elastic Beanstalk and S3 static website origins below use plain
+        // http:// only for internal health-checks during development.
+        // All public traffic is routed through CloudFront over HTTPS.
+        'http://balentinetech-backend-env.eba-pmim6y3b.us-east-2.elasticbeanstalk.com',  // EB (internal)
+        'http://balentinetech-solutions-frontend.s3-website-us-east-2.amazonaws.com',    // S3 (internal)
     ],
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type']
 }));
 
-app.use(express.json());
+// Stripe webhooks require the raw body — mount BEFORE express.json()
+app.post(
+    '/api/webhook',
+    express.raw({ type: 'application/json' }),
+    async (req, res) => {
+        const sig = req.headers['stripe-signature'];
+        let event;
+        try {
+            event = stripe.webhooks.constructEvent(
+                req.body,
+                sig,
+                process.env.STRIPE_WEBHOOK_SECRET
+            );
+        } catch (err) {
+            console.error('Webhook signature verification failed:', err.message);
+            return res.status(400).send(`Webhook Error: ${err.message}`);
+        }
+
+        try {
+            switch (event.type) {
+                case 'checkout.session.completed': {
+                    const session = event.data.object;
+                    await pool.query(
+                        `UPDATE subscriptions
+                         SET status = 'active',
+                             stripe_customer_id = $1,
+                             stripe_sub_id = $2
+                         WHERE stripe_session_id = $3`,
+                        [
+                            session.customer,
+                            session.subscription,
+                            session.id,
+                        ]
+                    );
+                    break;
+                }
+                case 'customer.subscription.deleted': {
+                    const sub = event.data.object;
+                    await pool.query(
+                        `UPDATE subscriptions SET status = 'cancelled' WHERE stripe_sub_id = $1`,
+                        [sub.id]
+                    );
+                    break;
+                }
+                default:
+                    break;
+            }
+            res.json({ received: true });
+        } catch (err) {
+            console.error('Webhook handler error:', err.message);
+            res.status(500).json({ error: 'Webhook processing failed' });
+        }
+    }
+);
+
+// Limit request body to 10 KB to prevent large-payload DoS attacks
+app.use(express.json({ limit: '10kb' }));
+
+// Rate limiting for checkout endpoint (10 per 15 min per IP)
+const checkoutLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: { error: 'Too many checkout requests. Please try again later.' }
+});
 
 // Rate limiting to prevent spam on the contact form (max 5 requests per 15 min per IP)
 const contactLimiter = rateLimit({
@@ -141,18 +320,25 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
         return res.status(400).json({ error: 'Invalid email address.' });
     }
 
+    // Escape all user-supplied fields before embedding in HTML to prevent
+    // XSS / HTML-injection via email clients that render HTML.
+    const safeName    = escapeHtml(name);
+    const safeEmail   = escapeHtml(email);
+    const safeProject = escapeHtml(project);
+    const safeMessage = escapeHtml(message);
+
     // Build the email to send to yourself
     const mailOptions = {
         from: process.env.EMAIL_USER,
         to: 'BalentineTechSolutions@gmail.com',
-        subject: `New Portfolio Inquiry: ${project} from ${name}`,
+        subject: `New Portfolio Inquiry: ${safeProject} from ${safeName}`,
         html: `
             <h2>New Contact Form Submission</h2>
-            <p><strong>Name:</strong> ${name}</p>
-            <p><strong>Email:</strong> ${email}</p>
-            <p><strong>Project Type:</strong> ${project}</p>
+            <p><strong>Name:</strong> ${safeName}</p>
+            <p><strong>Email:</strong> ${safeEmail}</p>
+            <p><strong>Project Type:</strong> ${safeProject}</p>
             <p><strong>Message:</strong></p>
-            <p>${message}</p>
+            <p>${safeMessage}</p>
         `
     };
 
@@ -160,11 +346,11 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     const autoReply = {
         from: process.env.EMAIL_USER,
         to: email,
-        subject: `Thanks for reaching out, ${name}!`,
+        subject: `Thanks for reaching out, ${safeName}!`,
         html: `
             <h2>Thanks for reaching out!</h2>
-            <p>Hi ${name},</p>
-            <p>I received your message about <strong>${project}</strong> and will get back to you within 24-48 hours.</p>
+            <p>Hi ${safeName},</p>
+            <p>I received your message about <strong>${safeProject}</strong> and will get back to you within 24-48 hours.</p>
             <p>— Demond Balentine Sr.<br>Balentine Tech Solutions</p>
         `
     };
@@ -176,6 +362,72 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     } catch (error) {
         console.error('Email error:', error);
         res.status(500).json({ error: 'Failed to send message. Please try again.' });
+    }
+});
+
+// ============================================
+// POST /api/create-checkout-session
+// Creates a Stripe Checkout session for a subscription plan.
+// Body: { planId: 'starter' | 'pro', customerEmail?: string }
+// Returns: { url } — redirect the browser to this URL.
+//
+// Pricing plans are driven by Stripe Price IDs stored in env vars:
+//   STRIPE_PRICE_STARTER  — e.g. price_xxxxxxxxxxxxxxxx
+//   STRIPE_PRICE_PRO      — e.g. price_xxxxxxxxxxxxxxxx
+// Create these in your Stripe Dashboard → Products.
+// ============================================
+app.post('/api/create-checkout-session', checkoutLimiter, async (req, res) => {
+    const { planId, customerEmail } = req.body;
+
+    const priceMap = {
+        starter: process.env.STRIPE_PRICE_STARTER,
+        pro:     process.env.STRIPE_PRICE_PRO,
+    };
+
+    const priceId = priceMap[planId];
+    if (!priceId) {
+        return res.status(400).json({ error: 'Invalid plan selected.' });
+    }
+
+    // Validate email format if provided
+    if (customerEmail) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(customerEmail)) {
+            return res.status(400).json({ error: 'Invalid email address.' });
+        }
+    }
+
+    try {
+        const sessionParams = {
+            mode: 'subscription',
+            line_items: [{ price: priceId, quantity: 1 }],
+            success_url: `${process.env.FRONTEND_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url:  `${process.env.FRONTEND_URL}/#pricing`,
+            payment_method_types: ['card'],
+        };
+
+        if (customerEmail) {
+            sessionParams.customer_email = customerEmail;
+        }
+
+        const session = await stripe.checkout.sessions.create(sessionParams);
+
+        // Encrypt PII (customer email) before storing in the database.
+        // Card numbers never reach this server — they go directly to Stripe's vault.
+        const encryptedEmail = customerEmail ? encryptField(customerEmail) : null;
+
+        // Record the pending subscription in the DB
+        await pool.query(
+            `INSERT INTO subscriptions (stripe_session_id, customer_email, plan, status)
+             VALUES ($1, $2, $3, 'pending')
+             ON CONFLICT (stripe_session_id) DO NOTHING`,
+            [session.id, encryptedEmail, planId]
+        ).catch((err) => console.warn('DB insert skipped:', err.message));
+
+        res.json({ url: session.url });
+    } catch (err) {
+        console.error('Stripe checkout error:', err.message);
+        res.status(500).json({ error: 'Could not create checkout session.' });
     }
 });
 
@@ -268,6 +520,141 @@ app.get('/api/projects/db', async (req, res) => {
     } catch (err) {
         console.error('DB query error:', err.message);
         res.status(503).json({ error: 'Database unavailable. Try /api/projects for the static list.' });
+    }
+});
+
+// ============================================
+// HEYGEN — AI Marketing Video Integration
+//
+// All HeyGen calls are proxied through this backend so the API key
+// never reaches the browser.
+//
+// Endpoints:
+//   GET  /api/heygen/avatars           — list available avatars
+//   GET  /api/heygen/voices            — list available voices
+//   POST /api/heygen/generate-video    — submit a video generation job
+//   GET  /api/heygen/video-status/:id  — poll a job for completion
+// ============================================
+
+const HEYGEN_BASE = 'https://api.heygen.com';
+
+// Shared helper — makes an authenticated request to HeyGen
+async function heygenFetch(path, options = {}) {
+    const apiKey = process.env.HEYGEN_API_KEY;
+    if (!apiKey) throw new Error('HEYGEN_API_KEY is not configured.');
+
+    const url = `${HEYGEN_BASE}${path}`;
+    const res = await fetch(url, {
+        ...options,
+        headers: {
+            'X-Api-Key': apiKey,
+            'Content-Type': 'application/json',
+            ...(options.headers || {}),
+        },
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        const msg = data?.message || data?.error || `HeyGen error ${res.status}`;
+        const err = new Error(msg);
+        err.status = res.status;
+        throw err;
+    }
+    return data;
+}
+
+// Rate limiter for HeyGen routes (5 requests per minute per IP)
+const heygenLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 5,
+    message: { error: 'Too many HeyGen requests. Please wait a moment.' },
+});
+
+// GET /api/heygen/avatars
+app.get('/api/heygen/avatars', heygenLimiter, async (_req, res) => {
+    try {
+        const data = await heygenFetch('/v2/avatars');
+        res.json(data);
+    } catch (err) {
+        console.error('HeyGen avatars error:', err.message);
+        res.status(err.status || 502).json({ error: err.message });
+    }
+});
+
+// GET /api/heygen/voices
+app.get('/api/heygen/voices', heygenLimiter, async (_req, res) => {
+    try {
+        const data = await heygenFetch('/v2/voices');
+        res.json(data);
+    } catch (err) {
+        console.error('HeyGen voices error:', err.message);
+        res.status(err.status || 502).json({ error: err.message });
+    }
+});
+
+// POST /api/heygen/generate-video
+// Body: { avatarId, voiceId, script, title? }
+app.post('/api/heygen/generate-video', heygenLimiter, async (req, res) => {
+    const { avatarId, voiceId, script, title } = req.body;
+
+    if (!avatarId || !voiceId || !script) {
+        return res.status(400).json({ error: 'avatarId, voiceId, and script are required.' });
+    }
+    if (typeof script !== 'string' || script.trim().length === 0) {
+        return res.status(400).json({ error: 'script must be a non-empty string.' });
+    }
+    if (script.length > 1500) {
+        return res.status(400).json({ error: 'script must be 1500 characters or fewer.' });
+    }
+
+    try {
+        const payload = {
+            video_inputs: [
+                {
+                    character: {
+                        type: 'avatar',
+                        avatar_id: avatarId,
+                        avatar_style: 'normal',
+                    },
+                    voice: {
+                        type: 'text',
+                        input_text: script.trim(),
+                        voice_id: voiceId,
+                    },
+                },
+            ],
+            dimension: { width: 1280, height: 720 },
+            ...(title ? { title } : {}),
+        };
+
+        const data = await heygenFetch('/v2/video/generate', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+
+        res.status(202).json(data);
+    } catch (err) {
+        console.error('HeyGen generate error:', err.message);
+        res.status(err.status || 502).json({ error: err.message });
+    }
+});
+
+// GET /api/heygen/video-status/:videoId
+// Polls until the job is completed, processing, or failed.
+app.get('/api/heygen/video-status/:videoId', heygenLimiter, async (req, res) => {
+    const { videoId } = req.params;
+
+    // Only allow safe characters in the ID to prevent path traversal
+    if (!/^[a-zA-Z0-9_-]+$/.test(videoId)) {
+        return res.status(400).json({ error: 'Invalid video ID.' });
+    }
+
+    try {
+        const data = await heygenFetch(`/v1/video_status.get?video_id=${encodeURIComponent(videoId)}`);
+        res.json(data);
+    } catch (err) {
+        console.error('HeyGen status error:', err.message);
+        res.status(err.status || 502).json({ error: err.message });
     }
 });
 

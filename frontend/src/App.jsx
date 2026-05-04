@@ -194,7 +194,7 @@ function About() {
     <section id="about" className="section">
       <div className="container about-grid">
         <div className="about__photo">
-          <img src="/assets/headshot-2026.png" alt="Demond Balentine Sr." className="about__headshot" />
+          <img src="/assets/headshot-2026.png?v=20260503" alt="Demond Balentine Sr." className="about__headshot" />
         </div>
         <div className="about__text">
           <h2 className="section__title">About Me</h2>
