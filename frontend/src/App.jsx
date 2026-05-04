@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 
 // Backend API base URL — injected at Docker build time via VITE_API_URL arg
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -21,7 +21,7 @@ function Nav() {
         <img src="/assets/logo.jpg" alt="Balentine Tech Solutions" className="nav__logo-img" />
       </a>
       <ul className="nav__links">
-        {['Projects', 'About', 'Services', 'Contact'].map((label) => (
+        {['Projects', 'About', 'Services', 'Videos', 'Pricing', 'Contact'].map((label) => (
           <li key={label}>
             <a href={`#${label.toLowerCase()}`} className="nav__link">
               {label}
@@ -194,7 +194,7 @@ function About() {
     <section id="about" className="section">
       <div className="container about-grid">
         <div className="about__photo">
-          <img src="/assets/profile-photo.jpg" alt="Demond Balentine Sr." className="about__headshot" />
+          <img src="/assets/headshot-2026.png" alt="Demond Balentine Sr." className="about__headshot" />
         </div>
         <div className="about__text">
           <h2 className="section__title">About Me</h2>
@@ -269,6 +269,348 @@ function Services() {
             </div>
           ))}
         </div>
+      </div>
+    </section>
+  );
+}
+
+}
+
+// ─────────────────────────────────────────────────────────────
+// Marketing Videos — HeyGen AI
+// ─────────────────────────────────────────────────────────────
+function VideoSection() {
+  const [avatars, setAvatars] = useState([]);
+  const [voices, setVoices] = useState([]);
+  const [form, setForm] = useState({ avatarId: '', voiceId: '', script: '', title: '' });
+  const [videoId, setVideoId] = useState(null);
+  const [videoUrl, setVideoUrl] = useState(null);
+  const [phase, setPhase] = useState('idle'); // idle | loading-meta | ready | generating | polling | done | error
+  const [errorMsg, setErrorMsg] = useState('');
+  const pollRef = React.useRef(null);
+
+  // Lazy-load avatars + voices only when section scrolls into view
+  React.useEffect(() => {
+    let loaded = false;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !loaded) {
+          loaded = true;
+          loadMeta();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    const el = document.getElementById('videos');
+    if (el) observer.observe(el);
+    return () => { if (el) observer.unobserve(el); };
+  }, []);
+
+  // Clean up the polling interval on unmount
+  React.useEffect(() => {
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, []);
+
+  async function loadMeta() {
+    setPhase('loading-meta');
+    try {
+      const [avRes, voRes] = await Promise.all([
+        fetch(`${API_BASE}/api/heygen/avatars`),
+        fetch(`${API_BASE}/api/heygen/voices`),
+      ]);
+      const avData = await avRes.json();
+      const voData = await voRes.json();
+      const avList = avData?.data?.avatars || [];
+      const voList = voData?.data?.voices || [];
+      setAvatars(avList);
+      setVoices(voList);
+      setForm((f) => ({
+        ...f,
+        avatarId: avList[0]?.avatar_id || '',
+        voiceId:  voList[0]?.voice_id  || '',
+      }));
+      setPhase('ready');
+    } catch {
+      setPhase('error');
+      setErrorMsg('Could not load HeyGen avatars/voices. Check your API key.');
+    }
+  }
+
+  async function handleGenerate(e) {
+    e.preventDefault();
+    setPhase('generating');
+    setVideoUrl(null);
+    setVideoId(null);
+    setErrorMsg('');
+    try {
+      const res = await fetch(`${API_BASE}/api/heygen/generate-video`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          avatarId: form.avatarId,
+          voiceId:  form.voiceId,
+          script:   form.script,
+          title:    form.title || 'Marketing Video',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Generation failed');
+      const vid = data?.data?.video_id || data?.video_id;
+      if (!vid) throw new Error('No video_id returned');
+      setVideoId(vid);
+      setPhase('polling');
+      startPolling(vid);
+    } catch (err) {
+      setPhase('error');
+      setErrorMsg(err.message);
+    }
+  }
+
+  function startPolling(vid) {
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/heygen/video-status/${vid}`);
+        const data = await res.json();
+        const status = data?.data?.status;
+        if (status === 'completed') {
+          clearInterval(pollRef.current);
+          setVideoUrl(data?.data?.video_url);
+          setPhase('done');
+        } else if (status === 'failed') {
+          clearInterval(pollRef.current);
+          setPhase('error');
+          setErrorMsg('Video generation failed on HeyGen side.');
+        }
+        // still 'processing' — keep polling
+      } catch {
+        clearInterval(pollRef.current);
+        setPhase('error');
+        setErrorMsg('Lost connection while polling for video status.');
+      }
+    }, 8000); // poll every 8 seconds
+  }
+
+  const onChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+
+  return (
+    <section id="videos" className="section section--dark">
+      <div className="container">
+        <h2 className="section__title">AI Marketing Videos</h2>
+        <p className="section__sub">
+          Generate a professional AI avatar video — powered by HeyGen.
+        </p>
+
+        {phase === 'loading-meta' && (
+          <p className="status-msg">Loading avatars &amp; voices…</p>
+        )}
+
+        {phase === 'error' && (
+          <p className="status-msg status-msg--error">{errorMsg}</p>
+        )}
+
+        {(phase === 'ready' || phase === 'generating' || phase === 'polling' || phase === 'done') && (
+          <div className="video-layout">
+            <form className="video-form" onSubmit={handleGenerate}>
+              <label className="video-label">
+                Avatar
+                <select
+                  className="form-input"
+                  name="avatarId"
+                  value={form.avatarId}
+                  onChange={onChange}
+                  required
+                >
+                  {avatars.map((a) => (
+                    <option key={a.avatar_id} value={a.avatar_id}>{a.avatar_name}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="video-label">
+                Voice
+                <select
+                  className="form-input"
+                  name="voiceId"
+                  value={form.voiceId}
+                  onChange={onChange}
+                  required
+                >
+                  {voices.map((v) => (
+                    <option key={v.voice_id} value={v.voice_id}>{v.name} ({v.language})</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="video-label">
+                Video Title <span className="video-label__opt">(optional)</span>
+                <input
+                  className="form-input"
+                  type="text"
+                  name="title"
+                  value={form.title}
+                  onChange={onChange}
+                  placeholder="e.g. Balentine Tech Intro"
+                  maxLength={80}
+                />
+              </label>
+
+              <label className="video-label">
+                Script <span className="video-label__opt">(max 1500 chars)</span>
+                <textarea
+                  className="form-input form-textarea"
+                  name="script"
+                  value={form.script}
+                  onChange={onChange}
+                  rows={5}
+                  maxLength={1500}
+                  placeholder="Hi, I'm Demond Balentine — a full-stack developer and cloud architect…"
+                  required
+                />
+                <span className="video-charcount">{form.script.length} / 1500</span>
+              </label>
+
+              <button
+                className="btn btn--primary btn--full"
+                type="submit"
+                disabled={phase === 'generating' || phase === 'polling'}
+              >
+                {phase === 'generating' ? 'Submitting…' : phase === 'polling' ? 'Generating video…' : 'Generate Video'}
+              </button>
+            </form>
+
+            <div className="video-preview">
+              {phase === 'polling' && (
+                <div className="video-spinner">
+                  <div className="spinner" />
+                  <p>HeyGen is rendering your video — this usually takes 1–3 minutes.</p>
+                </div>
+              )}
+              {phase === 'done' && videoUrl && (
+                <div className="video-result">
+                  <video
+                    src={videoUrl}
+                    controls
+                    className="video-player"
+                    poster=""
+                  />
+                  <a
+                    href={videoUrl}
+                    download
+                    className="btn btn--outline btn--full"
+                    style={{ marginTop: '0.75rem' }}
+                  >
+                    Download Video
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Pricing / Subscriptions
+// ─────────────────────────────────────────────────────────────
+const PLANS = [
+  {
+    id: 'starter',
+    name: 'Starter',
+    price: '$97',
+    period: '/mo',
+    features: [
+      'Landing page or portfolio build',
+      'Monthly maintenance & updates',
+      'Email support',
+      'Basic cloud hosting setup',
+    ],
+    cta: 'Get Started',
+    highlight: false,
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    price: '$297',
+    period: '/mo',
+    features: [
+      'Full-stack SaaS development',
+      'CI/CD pipeline & Docker setup',
+      'AWS cloud architecture',
+      'Priority Slack support',
+      'Monthly strategy call',
+    ],
+    cta: 'Go Pro',
+    highlight: true,
+  },
+];
+
+function PricingCard({ plan }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleSubscribe = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/create-checkout-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId: plan.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Checkout failed');
+      window.location.href = data.url;
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className={`pricing-card${plan.highlight ? ' pricing-card--featured' : ''}`}>
+      {plan.highlight && <span className="pricing-card__badge">Most Popular</span>}
+      <h3 className="pricing-card__name">{plan.name}</h3>
+      <div className="pricing-card__price">
+        <span className="pricing-card__amount">{plan.price}</span>
+        <span className="pricing-card__period">{plan.period}</span>
+      </div>
+      <ul className="pricing-card__features">
+        {plan.features.map((f) => (
+          <li key={f} className="pricing-card__feature">✓ {f}</li>
+        ))}
+      </ul>
+      <button
+        className={`btn btn--full${plan.highlight ? ' btn--primary' : ' btn--outline'}`}
+        onClick={handleSubscribe}
+        disabled={loading}
+      >
+        {loading ? 'Redirecting…' : plan.cta}
+      </button>
+      {error && <p className="form-feedback form-feedback--error">{error}</p>}
+    </div>
+  );
+}
+
+function Pricing() {
+  return (
+    <section id="pricing" className="section section--dark">
+      <div className="container">
+        <h2 className="section__title">Subscription Plans</h2>
+        <p className="section__sub">
+          Ongoing development and cloud support — billed monthly, cancel any time.
+        </p>
+        <div className="pricing-grid">
+          {PLANS.map((p) => (
+            <PricingCard key={p.id} plan={p} />
+          ))}
+        </div>
+        <p className="pricing-note">
+          Need something custom?{' '}
+          <a href="#contact" className="pricing-note__link">Let's talk →</a>
+        </p>
       </div>
     </section>
   );
@@ -409,6 +751,8 @@ export default function App() {
         <TechStack />
         <About />
         <Services />
+        <VideoSection />
+        <Pricing />
         <Contact />
       </main>
       <Footer />
