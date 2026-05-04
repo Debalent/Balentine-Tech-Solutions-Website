@@ -10,6 +10,9 @@
   "author": "Demond Balentine",
   "license": "MIT",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1024.0"
+    "@aws-sdk/client-s3": "^3.1031.0"
+  },
+  "devDependencies": {
+    "puppeteer": "^24.41.0"
   }
 }
